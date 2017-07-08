@@ -3,14 +3,15 @@ import { graphqlExpress, graphiqlExpress } from 'graphql-server-express';
 import bodyParser from 'body-parser';
 import schema from './api/schema';
 import { EducationLevel, SalaryType, ContractType, TechnicalSkill, Applicant, ApplicantTechnicalSkill, Applicants } from './api/models';
+import cors from 'cors';
 
 const app = express();
 
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
+var corsOptions = {
+  origin: process.env.CLIENT_APP,
+  credentials: true // <-- REQUIRED backend setting
+};
+app.use(cors(corsOptions));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());

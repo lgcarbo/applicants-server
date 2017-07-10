@@ -51,10 +51,18 @@ export class Applicant {
         return query.then(([row]) => row);
     }
     save(ApplicantId, LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, TechnicalSkillIds) {
-        return knex('Applicant')
-            .where({ApplicantId})
-            .update({LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId})
-            .then(() => ApplicantId);
+        if(ApplicantId > 0) {
+            return knex('Applicant')
+                .where({ApplicantId})
+                .update({LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, ModificationDate: new Date()})
+                .then(() => ApplicantId);
+        }
+        else {
+            return knex.insert({ LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, ModificationDate: new Date(), CreationDate: new Date() })
+                .returning('ApplicantId')
+                .into('Applicant')
+                .then((ApplicantId) => ApplicantId);
+        }
     }
 }
 

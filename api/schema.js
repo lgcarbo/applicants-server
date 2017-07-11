@@ -19,9 +19,14 @@ type Applicant {
   DesiredSalary: Int!
   SalaryType: SalaryType!
   ContractType: ContractType!
-  TechnicalSkills: [TechnicalSkill]!
+  TechnicalSkills: [TechnicalSkill]
   CreationDate: Date!
   ModificationDate: Date!
+}
+
+type PaginatedApplicants {
+  Applicants: [Applicant]
+  TotalCount: Int
 }
 
 type ContractType {
@@ -55,7 +60,7 @@ type Query {
   SalaryTypes: [SalaryType]
   TechnicalSkills: [TechnicalSkill]
   Applicant(ApplicantId: Int!): Applicant
-  Applicants: [Applicant]
+  PaginatedApplicants(page: Int!, count: Int!): PaginatedApplicants
 }
 
 type Mutation {
@@ -72,8 +77,11 @@ type Mutation {
     DesiredSalary: Int!
     SalaryTypeId: Int!
     ContractTypeId: Int!
-    TechnicalSkillIds: [Int]!
+    TechnicalSkillIds: [Int]
   ) : Applicant
+
+  deleteApplicant (ApplicantId: Int!) : Int
+
 }
 
 schema {
@@ -155,8 +163,11 @@ const resolvers = {
     Applicant(root, { ApplicantId }, context) {
       return context.Applicant.getById(ApplicantId);
     },
-    Applicants(root, args, context) {
-      return context.Applicants.getAll();
+    // Applicants(root, args, context) {
+    //   return context.Applicants.getAll();
+    // }
+    PaginatedApplicants(root, { page, count }, context) {
+      return context.Applicants.getByPage(page, count);
     }
   },
 
@@ -165,6 +176,10 @@ const resolvers = {
       return Promise.resolve()
         .then(() => (context.Applicant.save(ApplicantId, LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, TechnicalSkillIds)))
         .then(() => context.Applicant.getById(ApplicantId));
+    },
+    deleteApplicant(root, { ApplicantId }, context) {
+      return Promise.resolve()
+        .then(() => context.Applicant.delete(ApplicantId));
     }
   }
 };

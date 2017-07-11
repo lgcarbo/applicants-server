@@ -52,23 +52,75 @@ export class Applicant {
     }
     save(ApplicantId, LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, TechnicalSkillIds) {
         if(ApplicantId > 0) {
-            return knex('Applicant')
+            return knex.transaction(trx => {
+                 knex('Applicant')
                 .where({ApplicantId})
                 .update({LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, ModificationDate: new Date()})
-                .then(() => ApplicantId);
+                .then(() => knex('ApplicantTechnicalSkill')
+                    .where({ ApplicantId })
+                    .del() )
+                .then(() => { TechnicalSkillIds.forEach(s => 
+                    knex('ApplicantTechnicalSkill')
+                    .insert({ ApplicantId, TechnicalSkillId: s })
+                    .then(result => ApplicantId));
+                    return ApplicantId;
+                })
+                .then(trx.commit)
+                .catch(trx.rollback)
+            })
+            .then((ApplicantId) => ApplicantId);
+            
         }
         else {
-            return knex.insert({ LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, ModificationDate: new Date(), CreationDate: new Date() })
+            return knex.transaction(trx => {
+                knex('Applicant')
+                .transacting(trx)
+                .insert({ LastName, FirstName, BirthDate, Email, IsWorking, EducationLevelId, EducationLevelFinished, YearsOfExperience, DesiredSalary, SalaryTypeId, ContractTypeId, ModificationDate: new Date(), CreationDate: new Date() })
                 .returning('ApplicantId')
-                .into('Applicant')
-                .then((ApplicantId) => ApplicantId);
+                .then(([ApplicantId]) => { TechnicalSkillIds.forEach(s => 
+                    knex('ApplicantTechnicalSkill')
+                    .insert({ ApplicantId, TechnicalSkillId: s })
+                    .then(result => ApplicantId));
+                    return ApplicantId;
+                })
+                .then(trx.commit)
+                .catch(trx.rollback)
+            })
+            .then((ApplicantId) => ApplicantId);
+            
         }
+    }
+    delete(ApplicantId) {
+        return knex.transaction(trx => {
+            knex('ApplicantTechnicalSkill')
+                .transacting(trx)
+                .where({ ApplicantId })
+                .del()
+                .then(() => knex('Applicant')
+                    .transacting(trx)
+                    .where({ ApplicantId })
+                    .del())
+                .then(trx.commit)
+                .catch(trx.rollback);
+        })
+        .then(() => true)
+        .catch((err) => {
+            console.log(err);
+            return false;
+        });
     }
 }
 
 export class Applicants {
     getAll() {
         return knex('Applicant');
+    }
+    getByPage(page, count) {
+        const offset = (page - 1) * count;
+        return { 
+            Applicants: knex('Applicant').orderBy('LastName').orderBy('FirstName').limit(count).offset(offset),
+            TotalCount: knex('Applicant').count('ApplicantId').then(([result]) => parseInt(result.count))
+        }
     }
 }
 

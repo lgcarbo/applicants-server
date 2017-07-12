@@ -68,7 +68,7 @@ type Mutation {
     ApplicantId: Int!
     LastName: String!
     FirstName: String!
-    BirthDate: Int
+    BirthDate: Date
     Email: String!
     IsWorking: Int!
     EducationLevelId: Int!
